@@ -1,3 +1,4 @@
-name = "api-checker"
+# wrangler.toml
+name = 'apichecker'
 compatibility_date = "2026-02-22"
 pages_build_output_dir = "public"
