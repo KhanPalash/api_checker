@@ -83,26 +83,39 @@ Create `.gitignore` (included in this project) so `node_modules` is not pushed.
 
 ## Deploy from GitHub
 
-### Option A: Render (recommended)
+### Cloudflare Pages (recommended)
+This repo now supports Cloudflare Pages Functions.
+
+Files added for Cloudflare:
+- `functions/api/check.js`
+- `functions/api/detect-models.js`
+- `functions/health.js`
+- `wrangler.toml`
+
+#### Deploy steps
+1. Push to GitHub
+2. Cloudflare Dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
+3. Select repo: `KhanPalash/api_checker`
+4. Build settings:
+   - Framework preset: **None**
+   - Build command: *(leave empty)*
+   - Build output directory: `public`
+5. Deploy
+
+After deploy:
+- Frontend: your Pages URL
+- APIs:
+  - `/api/check`
+  - `/api/detect-models`
+  - `/health`
+
+### Option B: Render
 1. Push project to GitHub
 2. Render → New Web Service → connect repo
 3. Settings:
    - Build Command: `npm install`
    - Start Command: `npm start`
-   - Environment: `Node`
 4. Deploy
-
-### Option B: Railway
-1. New Project → Deploy from GitHub repo
-2. Railway auto-detects Node app
-3. Start command: `npm start`
-
-### Option C: VPS / self-host
-```bash
-npm install
-npm start
-```
-Use Nginx reverse proxy + PM2 for production.
 
 ---
 
