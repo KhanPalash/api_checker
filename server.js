@@ -6,7 +6,7 @@ const attachDetect = require('./server_addition');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/api/check', async (req, res) => {
@@ -49,8 +49,12 @@ app.post('/api/check', async (req, res) => {
     }
 
     const start = Date.now();
-    const resp = await fetch(url, fetchOptions);
-    clearTimeout(timeout);
+    let resp;
+    try {
+      resp = await fetch(url, fetchOptions);
+    } finally {
+      clearTimeout(timeout);
+    }
     const timeMs = Date.now() - start;
 
     let snippet = '';
@@ -83,11 +87,16 @@ app.post('/api/check', async (req, res) => {
   }
 });
 
+app.get('/health', (req, res) => {
+  res.json({ ok: true, service: 'api-checker' });
+});
+
+// attach detect-models endpoint
+attachDetect(app, fetch);
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`api-checker listening on http://localhost:${PORT}`));
-// attach detect-models endpoint
-attachDetect(app, fetch);
