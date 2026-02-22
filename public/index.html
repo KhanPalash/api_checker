@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KhansCreations API Checker</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --bg-dark:#0a0a0f; --bg-card:#12121a; --primary:#2563EB;
+      --secondary:#7C3AED; --accent:#00ff88; --text:#e0e0e0;
+      --text-muted:#888; --border:#1e1e2e; --glow:rgba(37,99,235,.45);
+      --success:#22c55e; --danger:#ef4444;
+    }
+    body {
+      font-family:'JetBrains Mono', monospace;
+      background:var(--bg-dark);
+      color:var(--text);
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+
+    .bg-grid {
+      position:fixed; inset:0;
+      background-image:linear-gradient(rgba(37,99,235,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,.03) 1px, transparent 1px);
+      background-size:50px 50px;
+      animation:gridMove 20s linear infinite;
+      z-index:-2;
+    }
+    @keyframes gridMove { 0% { transform:translateY(0);} 100%{ transform:translateY(50px);} }
+    .orb { position:fixed; border-radius:50%; filter:blur(90px); z-index:-1; animation:float 15s ease-in-out infinite; }
+    .orb-1 { width:380px; height:380px; background:var(--primary); opacity:.14; top:-100px; right:-100px; }
+    .orb-2 { width:300px; height:300px; background:var(--secondary); opacity:.10; bottom:-50px; left:-50px; animation-delay:-5s; }
+    @keyframes float { 0%,100%{transform:translate(0,0)} 33%{transform:translate(28px,-24px)} 66%{transform:translate(-18px,18px)} }
+
+    .terminal-header {
+      background:rgba(18,18,26,.85);
+      border-bottom:1px solid var(--border);
+      padding:.6rem .9rem;
+      position:sticky; top:0; z-index:100;
+      backdrop-filter:blur(10px);
+    }
+    .terminal-bar { display:flex; align-items:center; gap:8px; }
+    .dot { width:12px; height:12px; border-radius:50%; }
+    .dot-red{background:#ff5f56}.dot-yellow{background:#ffbd2e}.dot-green{background:#27ca40}
+    .logo-text {
+      margin-left:8px;
+      font-weight:800;
+      font-size:.9rem;
+      background:linear-gradient(135deg,var(--primary),var(--secondary));
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+
+    main { max-width:860px; margin:0 auto; padding:18px; }
+    .card {
+      background:var(--bg-card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:16px;
+      box-shadow:0 20px 60px rgba(0,0,0,.45);
+    }
+
+    .title {
+      font-size:clamp(1.25rem,4vw,1.9rem);
+      font-weight:800;
+      margin-bottom:8px;
+      background:linear-gradient(135deg,#fff,var(--accent));
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+    .sub { color:var(--text-muted); font-size:.9rem; margin-bottom:12px; }
+
+    label { display:block; margin-top:10px; font-weight:600; font-size:.86rem; color:#cfd6e6; }
+    input,select,button {
+      width:100%; margin-top:8px; padding:12px;
+      border-radius:10px; border:1px solid var(--border);
+      background:#0d0f18; color:var(--text);
+      font-family:'JetBrains Mono', monospace;
+      font-size:.9rem;
+    }
+    input:focus,select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 2px rgba(37,99,235,.18); }
+    button {
+      background:linear-gradient(135deg,var(--primary),var(--secondary));
+      border:none; font-weight:700; cursor:pointer; margin-top:14px;
+      box-shadow:0 0 24px var(--glow);
+    }
+
+    .small { color:var(--text-muted); font-size:.78rem; margin-top:6px; }
+    .result { margin-top:14px; border:1px solid var(--border); border-radius:10px; padding:12px; background:#0f1119; }
+    pre { margin-top:8px; border:1px solid var(--border); border-radius:8px; padding:10px; background:#0a0c14; white-space:pre-wrap; word-break:break-word; font-size:.8rem; }
+
+    .loading-overlay {
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+      background:rgba(5,8,18,.75); backdrop-filter:blur(4px); z-index:1000;
+    }
+    .loader-box { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:18px; min-width:230px; text-align:center; }
+    .spinner { width:30px; height:30px; border:3px solid #24324f; border-top-color:#88b2ff; border-radius:50%; margin:0 auto 10px; animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg);} }
+
+    .toast {
+      position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.9);
+      opacity:0; z-index:1100;
+      background:linear-gradient(135deg,#10301c,#154425);
+      border:1px solid rgba(34,197,94,.6);
+      color:#d6ffe4; padding:20px 26px; border-radius:16px;
+      font-size:30px; font-weight:800; text-align:center; min-width:280px;
+      box-shadow:0 20px 40px rgba(0,0,0,.45), 0 0 30px rgba(34,197,94,.2);
+      transition:.22s ease;
+    }
+    .toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+
+    .error-screen { position:fixed; inset:0; display:none; z-index:1200; background:linear-gradient(180deg,#3f0e13,#1f090c); color:#ffe5e8; padding:18px; }
+    .error-card { max-width:760px; margin:10vh auto 0; background:rgba(0,0,0,.25); border:1px solid rgba(239,68,68,.5); border-radius:14px; padding:16px; }
+    .error-btn { margin-top:12px; border:none; background:var(--danger); color:#fff; font-weight:700; padding:10px 14px; border-radius:10px; cursor:pointer; }
+
+    .brand-footer {
+      text-align:center;
+      color:var(--text-muted);
+      font-size:.8rem;
+      margin:18px 0 6px;
+      opacity:.9;
+    }
+    .brand-footer strong { color:#9cc9ff; font-weight:700; }
+
+    @media (max-width:560px){ main{padding:12px} .card{padding:14px} .toast{font-size:24px; min-width:230px;} }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <header class="terminal-header">
+    <div class="terminal-bar">
+      <div class="dot dot-red"></div>
+      <div class="dot dot-yellow"></div>
+      <div class="dot dot-green"></div>
+      <div class="logo-text">KhansCreations / API Checker v3</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h1 class="title">Check API Status</h1>
+      <p class="sub" style="display:none"></p>
+
+      <label>Base URL</label>
+      <select id="baseSelect">
+        <option value="https://api.openai.com/v1">https://api.openai.com/v1</option>
+        <option value="https://api.us-west-2.modal.direct/v1">https://api.us-west-2.modal.direct/v1</option>
+        <option value="https://openrouter.ai/api/v1">https://openrouter.ai/api/v1</option>
+        <option value="https://api.anthropic.com/v1">https://api.anthropic.com/v1</option>
+        <option value="https://generativelanguage.googleapis.com/v1beta">https://generativelanguage.googleapis.com/v1beta</option>
+        <option value="https://api.groq.com/openai/v1">https://api.groq.com/openai/v1</option>
+        <option value="https://api.deepseek.com/v1">https://api.deepseek.com/v1</option>
+        <option value="https://api.mistral.ai/v1">https://api.mistral.ai/v1</option>
+        <option value="https://api.cohere.ai/v1">https://api.cohere.ai/v1</option>
+        <option value="https://api.perplexity.ai">https://api.perplexity.ai</option>
+        <option value="custom">-- Custom URL --</option>
+      </select>
+      <input id="customInput" placeholder="https://your-api.com/v1" style="display:none" />
+
+      <label>API Path (default: /chat/completions)</label>
+      <input id="pathInput" value="/chat/completions" placeholder="/chat/completions" />
+
+      <label>API Key / Token (Bearer)</label>
+      <input id="tokenInput" placeholder="Paste token" />
+
+      <label>Model (select detected or type manually)</label>
+      <select id="modelSelect" style="margin-top:8px;">
+        <option value="">-- Detected models will appear here --</option>
+      </select>
+      <input id="modelInput" placeholder="Or type model manually (e.g. gpt-4o-mini)" />
+      <div class="small">Tip: Pick from the selector, or type the model manually.</div>
+
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button id="checkBtn" style="margin-top:0;">Check API</button>
+        <button id="resetBtn" type="button" style="margin-top:0; background:transparent; border:1px solid var(--border); box-shadow:none;">Reset</button>
+      </div>
+      <div class="result" id="result">Ready.</div>
+    </section>
+    <div class="brand-footer">A product by <strong>@KhansCreations</strong></div>
+  </main>
+
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loader-box"><div class="spinner"></div><div>Checking API...</div></div>
+  </div>
+  <div class="toast" id="successToast">Live / Valid ✅</div>
+  <div class="error-screen" id="errorScreen">
+    <div class="error-card">
+      <h2>Request Failed</h2>
+      <div id="errorMeta">Error code: unknown</div>
+      <pre id="errorReason">No details</pre>
+      <button class="error-btn" id="closeErrorBtn">Close</button>
+    </div>
+  </div>
+
+  <script>
+    const baseSelect = document.getElementById('baseSelect');
+    const customInput = document.getElementById('customInput');
+    const tokenInput = document.getElementById('tokenInput');
+    const modelInput = document.getElementById('modelInput');
+    const modelSelect = document.getElementById('modelSelect');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const successToast = document.getElementById('successToast');
+    const errorScreen = document.getElementById('errorScreen');
+    const errorMeta = document.getElementById('errorMeta');
+    const errorReason = document.getElementById('errorReason');
+
+    const getBaseUrl = () => baseSelect.value === 'custom' ? customInput.value.trim() : baseSelect.value;
+
+    function showLoading(show){ loadingOverlay.style.display = show ? 'flex' : 'none'; }
+    function showSuccessToast(){ successToast.classList.add('show'); setTimeout(()=>successToast.classList.remove('show'),2200); }
+    function showErrorScreen(code, reason){ errorMeta.textContent = 'Error code: ' + (code||'unknown'); errorReason.textContent = reason||'No details'; errorScreen.style.display='block'; }
+    document.getElementById('closeErrorBtn').addEventListener('click',()=> errorScreen.style.display='none');
+
+    baseSelect.addEventListener('change', ()=> customInput.style.display = baseSelect.value === 'custom' ? 'block' : 'none');
+
+    async function detectModels(){
+      const baseUrl = getBaseUrl();
+      const token = tokenInput.value.trim();
+      if(!baseUrl || !token) return;
+      try {
+        const r = await fetch('/api/detect-models', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+          body: JSON.stringify({ baseUrl })
+        });
+        const j = await r.json();
+        modelSelect.innerHTML = '<option value="">-- Select detected model --</option>';
+        if(j.ok && Array.isArray(j.models) && j.models.length){
+          const unique = [...new Set(j.models)].slice(0,120);
+          unique.forEach(m=>{
+            const o=document.createElement('option');
+            o.value=m; o.textContent=m;
+            modelSelect.appendChild(o);
+          });
+          if(!modelInput.value) modelInput.value = unique[0];
+        }
+      } catch {}
+    }
+
+    tokenInput.addEventListener('blur', detectModels);
+    modelInput.addEventListener('focus', detectModels);
+    modelSelect.addEventListener('change', ()=>{
+      if (modelSelect.value) modelInput.value = modelSelect.value;
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      baseSelect.value = 'https://api.openai.com/v1';
+      customInput.style.display = 'none';
+      customInput.value = '';
+      document.getElementById('pathInput').value = '/chat/completions';
+      tokenInput.value = '';
+      modelInput.value = '';
+      modelSelect.innerHTML = '<option value="">-- Detected models will appear here --</option>';
+      modelSelect.value = '';
+      document.getElementById('result').textContent = 'Ready.';
+      errorScreen.style.display = 'none';
+      successToast.classList.remove('show');
+    });
+
+    document.getElementById('checkBtn').addEventListener('click', async ()=>{
+      const baseUrl = getBaseUrl();
+      const customPath = document.getElementById('pathInput').value.trim();
+      const token = tokenInput.value.trim();
+      const model = modelInput.value.trim();
+      const resultEl = document.getElementById('result');
+
+      if(!baseUrl) return showErrorScreen('MISSING_BASE_URL','Please provide/select a base URL.');
+      if(!token) return showErrorScreen('MISSING_TOKEN','Please provide a Bearer token/API key.');
+
+      const method = /chat\/completions/i.test(customPath) ? 'POST' : 'GET';
+      const payload = { baseUrl, customPath, method, model, timeoutMs: 30000 };
+
+      showLoading(true);
+      resultEl.textContent = 'Checking...';
+      try {
+        const resp = await fetch('/api/check', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+          body: JSON.stringify(payload)
+        });
+        const j = await resp.json();
+        showLoading(false);
+
+        const statusText = (j.status !== null && j.status !== undefined) ? `${j.status} ${j.statusText||''}` : 'error';
+        let html = `<div><strong>URL:</strong> ${j.url||'n/a'}</div>`;
+        html += `<div><strong>Status:</strong> ${statusText}</div>`;
+        html += `<div><strong>Latency:</strong> ${j.timeMs||'n/a'} ms</div>`;
+        if(j.snippet) html += `<details open><summary>Response snippet</summary><pre>${String(j.snippet).slice(0,1400)}</pre></details>`;
+        resultEl.innerHTML = html;
+
+        if(j.ok){
+          showSuccessToast();
+        } else {
+          let reason = j.error || j.statusText || 'Unknown error';
+          if(j.snippet){ try{ const p=JSON.parse(j.snippet); if(p && p.error) reason = p.error.message || JSON.stringify(p.error); }catch(_){} }
+          showErrorScreen(j.status || 'API_ERROR', reason);
+        }
+      } catch(e){ showLoading(false); showErrorScreen('NETWORK_ERROR', e.message || 'Request failed'); }
+    });
+  </script>
+</body>
+</html>
